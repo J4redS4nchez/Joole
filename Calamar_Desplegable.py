@@ -8,6 +8,12 @@ from PySide6.QtCore import Property
 from PySide6.QtGui import QPainter, QPainterPath
 from PySide6.QtCore import Qt, QEvent, QPoint, QTimer
 from PySide6.QtWidgets import QGraphicsOpacityEffect
+import os
+from PySide6.QtWidgets import QGridLayout
+from PySide6.QtCore import QProcess
+from PySide6.QtGui import QRegion
+from PySide6.QtGui import QPolygon
+
 
 
 
@@ -207,6 +213,63 @@ class CalamarDesplegable(QWidget):
 
 
 
+        # ===== Contenedor de iconos (zona usable del panel) =====
+        # Dejamos libre el último 25% para el botón regresar
+        self.apps_area = QWidget(self.panel_frame)
+        self.apps_area.setGeometry(0, 0, PANEL_ANCHO, PANEL_ALTO - BOTON_ALTO)
+        self.apps_area.setAttribute(Qt.WA_TranslucentBackground, True)
+
+        self.grid = QGridLayout(self.apps_area)
+        self.grid.setContentsMargins(14, 14, 14, 14)
+        self.grid.setHorizontalSpacing(12)
+        self.grid.setVerticalSpacing(12)
+
+
+        # ===== Lista inicial (MVP) =====
+        # NOTA: cambia los paths por los tuyos (pueden ser .lnk o .exe)
+        apps = [
+            # ("Nombre", "ruta_icono_png", "ruta_app_lnk_o_exe")
+            ("VS Code", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\Visual Studio Code.lnk"),
+            ("Premiere", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\Adobe Premiere Pro.lnk"),
+            ("OBS", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\OBS Studio.lnk"),
+            ("Roblox", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\Roblox Player.lnk"),
+        ]
+
+        cols = 3  # 3 iconos por fila (puedes cambiar a 3 si quieres)
+
+        for i, (nombre, icono, target) in enumerate(apps):
+            btn_app = QToolButton(self.apps_area)
+            btn_app.setCursor(Qt.PointingHandCursor)
+            btn_app.setToolTip(nombre)
+
+            btn_app.setIcon(QIcon(icono))
+            btn_app.setIconSize(QSize(45, 45))
+            btn_app.setFixedSize(62, 62)
+
+            btn_app.setStyleSheet("""
+                QToolButton {
+                    background: rgba(0,0,0,0);
+                    border: none;
+                    padding: 0px;
+                    margin: 0px;
+                }
+                QToolButton:hover {
+                    background: rgba(255,255,255,25);
+                    border-radius: 12px;
+                }
+            """)
+
+            # Conectar click -> abrir app
+            btn_app.clicked.connect(lambda checked=False, p=target: self._abrir_app(p))
+
+            row = i // cols
+            col = i % cols
+            self.grid.addWidget(btn_app, row, col, Qt.AlignCenter)
+        # al terminar el for (usa la variable row que ya calculas)
+        self.grid.setRowStretch(row + 1, 1)
+
+
+
 
 
         # ===== Botón de regreso dentro del panel (último 25%) =====
@@ -253,6 +316,9 @@ class CalamarDesplegable(QWidget):
         self.anim = QPropertyAnimation(self.panel_img, b"progress")
         self.anim.setDuration(VELOCIDAD)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
+        self.anim.valueChanged.connect(self._sync_apps_mask)
+
+
 
 
         # Para evitar que se pueda spamear el click mientras anima
@@ -304,6 +370,59 @@ class CalamarDesplegable(QWidget):
 
         return super().eventFilter(obj, event)
 
+
+    def _abrir_app(self, path):
+        try:
+            # Esto abre .lnk, .exe, carpetas, etc. en Windows
+            os.startfile(path)
+        except Exception:
+            # Fallback (por si algo falla)
+            QProcess.startDetached(path)
+
+
+    def _sync_apps_mask(self, value):
+        p = float(value)
+
+        # --- SNAP para evitar valores "casi 0" o "casi 1" que causan rastros ---
+        if p <= 0.01:
+            p = 0.0
+        elif p >= 0.99:
+            p = 1.0
+
+        if p == 0.0:
+            # Oculta y limpia máscara (evita parpadeos al final)
+            self.apps_area.setMask(QRegion())  # máscara vacía
+            self.apps_area.hide()
+            self.apps_area.setEnabled(False)
+            return
+        else:
+            # Asegura visible mientras hay contenido recortado
+            if not self.apps_area.isVisible():
+                self.apps_area.show()
+            self.apps_area.setEnabled(True)
+
+        w = self.apps_area.width()
+        h = self.apps_area.height()
+
+        visible_h = int(h * p)
+
+        max_diagonal = int(w * DIAGONAL)
+        diagonal_offset = int(max_diagonal * (1.0 - p))
+
+        poly = QPolygon([
+            QPoint(0, 0),
+            QPoint(w, 0),
+            QPoint(w, max(0, visible_h - diagonal_offset)),
+            QPoint(max(0, w - diagonal_offset), visible_h),
+            QPoint(0, visible_h),
+        ])
+
+        self.apps_area.setMask(QRegion(poly))
+
+
+
+
+
     # ====== NUEVO: lógica del panel ======
     def _toggle_panel(self):
         if self._animando:
@@ -323,6 +442,11 @@ class CalamarDesplegable(QWidget):
         self.anim.stop()
 
         if self.panel.isVisible():
+
+            # Fade-out de iconos (1 -> 0) mientras se cierra el panel
+            self.apps_area.show()  # por si acaso
+
+
 
             self.btn_regresar.hide()
 
@@ -367,8 +491,6 @@ class CalamarDesplegable(QWidget):
             self.btn_regresar.hide()
 
 
-            # Asegura un primer frame estable ANTES de animar
-            self.panel_img.progress = 0.0
             
             # Fade-out del widget principal (para que no desaparezca de golpe)
             self.fade_anim.stop()
@@ -389,6 +511,13 @@ class CalamarDesplegable(QWidget):
 
             self.anim.setStartValue(0.0)
             self.anim.setEndValue(1.0)
+
+
+            # Limpia estado antes de abrir (evita parpadeo del primer frame)
+            self.apps_area.hide()
+            self.apps_area.setMask(QRegion())
+            # Asegura un primer frame estable ANTES de animar
+            self.panel_img.progress = 0.0
 
             # Arrancar en el siguiente ciclo del event loop (evita parpadeo)
             QTimer.singleShot(0, self.anim.start)
