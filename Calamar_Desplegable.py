@@ -74,8 +74,11 @@ class CalamarDesplegable(QWidget):
             self.grid,
             apps,
             abrir_callback=abrir_app,
-            cols=3
+            cols=3,
+            rellenar_hasta_lleno=True,
+            placeholder_icon="assets/squid.png"
         )
+
 
         # ===== Botón regresar dentro del panel (modular) =====
         alto_real = self.panel_img.height()
