@@ -135,6 +135,9 @@ def crear_area_iconos(panel_frame: QWidget):
     grid.setHorizontalSpacing(12)
     grid.setVerticalSpacing(12)
 
+    grid.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+
+
 
     apps_area.hover_tip = HoverTip(apps_area)
 

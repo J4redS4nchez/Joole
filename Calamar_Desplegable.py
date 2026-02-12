@@ -20,6 +20,11 @@ from ui.panel import crear_panel_flotante
 from ui.iconos import crear_area_iconos, poblar_grid_iconos
 
 
+import os
+import json
+
+
+
 class CalamarDesplegable(QWidget):
     def __init__(self):
         super().__init__()
@@ -63,23 +68,10 @@ class CalamarDesplegable(QWidget):
         # ===== Area de iconos + grid (modular) =====
         self.apps_area, self.grid = crear_area_iconos(self.panel_frame)
 
-        # ===== Lista inicial (MVP) =====
-        apps = [
-            ("VS Code", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\Visual Studio Code.lnk"),
-            ("Premiere", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\Adobe Premiere Pro.lnk"),
-            ("OBS", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\OBS Studio.lnk"),
-            ("Roblox", "assets/squid.png", r"C:\Users\TU_USUARIO\Desktop\Roblox Player.lnk"),
-        ]
+        # ===== Apps persistentes (JSON) =====
+        self.apps = self._load_apps()
+        self._refresh_grid()
 
-        poblar_grid_iconos(
-            self.apps_area,
-            self.grid,
-            apps,
-            abrir_callback=abrir_app,
-            cols=3,
-            rellenar_hasta_lleno=True,
-            placeholder_icon="assets/squid.png"
-        )
 
 
         # ===== Botón regresar dentro del panel (modular) =====
@@ -301,3 +293,80 @@ class CalamarDesplegable(QWidget):
         if self.panel.isVisible():
             self.panel.hide()
         super().closeEvent(event)
+
+
+    #GUARDAR, CARGAR APPS
+
+    def _apps_json_path(self) -> str:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.path.join(base_dir, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        return os.path.join(data_dir, "apps.json")
+
+    def _load_apps(self) -> list:
+        """
+        Devuelve lista en formato:
+        [(nombre, icono_path, target_path), ...]
+        """
+        path = self._apps_json_path()
+        if not os.path.exists(path):
+            # crea JSON vacío
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump([], f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+            return []
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return []
+
+        apps = []
+        for item in data if isinstance(data, list) else []:
+            nombre = item.get("nombre", "")
+            icono = item.get("icono", "")
+            target = item.get("target", "")
+            if nombre and icono and target:
+                apps.append((nombre, icono, target))
+        return apps
+
+    def _save_apps(self, apps: list) -> None:
+        """
+        apps: [(nombre, icono_path, target_path), ...]
+        Guarda en JSON: [{"nombre":..., "icono":..., "target":...}, ...]
+        """
+        path = self._apps_json_path()
+        data_dir = os.path.dirname(path)
+        os.makedirs(data_dir, exist_ok=True)
+
+        payload = []
+        for (nombre, icono, target) in apps:
+            payload.append({"nombre": nombre, "icono": icono, "target": target})
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    def _refresh_grid(self) -> None:
+        """Limpia y vuelve a poblar el grid con self.apps."""
+        # 1) limpiar widgets existentes del layout
+        while self.grid.count():
+            item = self.grid.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+
+        # 2) volver a poblar
+        poblar_grid_iconos(
+            self.apps_area,
+            self.grid,
+            self.apps,
+            abrir_callback=abrir_app,
+            cols=3,
+            rellenar_hasta_lleno=False,
+            placeholder_icon="assets/squid.png"
+        )
+
