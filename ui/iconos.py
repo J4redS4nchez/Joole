@@ -55,8 +55,11 @@ class HoverTip(QLabel):
     """Tooltip flotante custom, pintado manualmente para evitar transparencia en Windows."""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.ToolTip)
+        self.setAttribute(Qt.WA_ShowWithoutActivating, True)
+
         self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setWindowFlag(Qt.WindowTransparentForInput, True)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
 
         self._bg = QColor(0, 0, 0, 220)
@@ -87,8 +90,8 @@ class HoverTip(QLabel):
         self.resize(self.width() + self._pad_x * 2, self.height() + self._pad_y * 2)
 
         # Posición: arriba del cursor
-        x = global_pos.x() + 12
-        y = global_pos.y() - self.height() - 12
+        x = global_pos.x() + 18
+        y = global_pos.y() - self.height() - 26
         self.move(x, y)
 
         self.show()
@@ -122,7 +125,9 @@ def crear_area_iconos(panel_frame: QWidget):
     Devuelve: apps_area, grid
     """
     apps_area = QWidget(panel_frame)
-    apps_area.setGeometry(0, 0, PANEL_ANCHO, PANEL_ALTO - BOTON_ALTO)
+    GAP = 10  # px de separación para que el botón no tape iconos
+    apps_area.setGeometry(0, 0, PANEL_ANCHO, PANEL_ALTO - BOTON_ALTO - GAP)
+
     apps_area.setAttribute(Qt.WA_TranslucentBackground, True)
 
     grid = QGridLayout(apps_area)

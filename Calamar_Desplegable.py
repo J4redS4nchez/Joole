@@ -30,7 +30,9 @@ class CalamarDesplegable(QWidget):
 
         # ===== Botón superior (modular) =====
         self.btn = crear_boton_superior(self)
-        self.btn.installEventFilter(self)
+
+        #ACTIVAR ANIMACIÓN DE ZOOM EN BOTON 
+        #self.btn.installEventFilter(self)  
 
         # ===== Fade (opacidad) para el widget principal =====
         self.opacity_effect = QGraphicsOpacityEffect(self)

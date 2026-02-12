@@ -74,8 +74,10 @@ def crear_boton_regresar(panel_frame: QWidget, pix_panel: QPixmap, alto_real: in
         Qt.SmoothTransformation
     )
 
-    y_btn = alto_real - BOTON_ALTO
-    btn_regresar.setGeometry(0, y_btn, ancho_real, BOTON_ALTO)
+    GAP = 10  # debe ser el mismo que en crear_area_iconos
+    y_btn = alto_real - BOTON_ALTO + GAP
+    btn_regresar.setGeometry(0, y_btn, ancho_real, BOTON_ALTO - GAP)
+
     btn_regresar.raise_()
 
     return btn_regresar
