@@ -31,6 +31,9 @@ from pathlib import Path
 from PySide6.QtWidgets import QFileIconProvider
 from PySide6.QtCore import QFileInfo
 
+import ctypes
+from ctypes import wintypes
+
 
 
 class CalamarDesplegable(QWidget):
@@ -363,6 +366,51 @@ class CalamarDesplegable(QWidget):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
+
+    #elimina acceso directo del escritorio
+
+    def _send_to_recycle_bin(self, path: str) -> bool:
+        """
+        Envía un archivo a la papelera (Windows) usando SHFileOperation.
+        Devuelve True si parece haber salido bien.
+        """
+        try:
+            FO_DELETE = 3
+            FOF_ALLOWUNDO = 0x0040
+            FOF_NOCONFIRMATION = 0x0010
+            FOF_SILENT = 0x0004
+
+            class SHFILEOPSTRUCTW(ctypes.Structure):
+                _fields_ = [
+                    ("hwnd", wintypes.HWND),
+                    ("wFunc", wintypes.UINT),
+                    ("pFrom", wintypes.LPCWSTR),
+                    ("pTo", wintypes.LPCWSTR),
+                    ("fFlags", wintypes.UINT),
+                    ("fAnyOperationsAborted", wintypes.BOOL),
+                    ("hNameMappings", wintypes.LPVOID),
+                    ("lpszProgressTitle", wintypes.LPCWSTR),
+                ]
+
+            # SHFileOperation requiere doble null al final
+            pFrom = path + "\0\0"
+
+            op = SHFILEOPSTRUCTW()
+            op.hwnd = None
+            op.wFunc = FO_DELETE
+            op.pFrom = pFrom
+            op.pTo = None
+            op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
+            op.fAnyOperationsAborted = False
+            op.hNameMappings = None
+            op.lpszProgressTitle = None
+
+            res = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op))
+            return (res == 0) and (not op.fAnyOperationsAborted)
+        except Exception:
+            return False
+
+
     def _refresh_grid(self) -> None:
         """Limpia y vuelve a poblar el grid con self.apps."""
         # 1) limpiar widgets existentes del layout
@@ -501,6 +549,10 @@ class CalamarDesplegable(QWidget):
 
             self.apps.append((name, icon_rel, target))
             changed = True
+            # Si soltaron un acceso directo (.lnk), lo quitamos del escritorio (a papelera)
+            if ext == ".lnk":
+                self._send_to_recycle_bin(str(pth))
+
 
         if changed:
             self._save_apps(self.apps)
