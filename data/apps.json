@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "nombre": "Roblox Studio",
+    "icono": "data/icons/Roblox_Studio.png",
+    "target": "C:\\Users\\jaret\\AppData\\Local\\Roblox\\Versions\\version-53373454f7df4478\\RobloxStudioBeta.exe"
+  },
+  {
+    "nombre": "Roblox Player",
+    "icono": "data/icons/Roblox_Player.png",
+    "target": "C:\\Users\\jaret\\AppData\\Local\\Roblox\\Versions\\version-8b8c34790f814a73\\RobloxPlayerBeta.exe"
+  },
+  {
+    "nombre": "OBS Studio",
+    "icono": "data/icons/OBS_Studio.png",
+    "target": "C:\\Program Files\\obs-studio\\bin\\64bit\\obs64.exe"
+  },
+  {
+    "nombre": "Visual Studio Code",
+    "icono": "data/icons/Visual_Studio_Code.png",
+    "target": "C:\\Users\\jaret\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+  },
+  {
+    "nombre": "HandBrake",
+    "icono": "data/icons/HandBrake.png",
+    "target": "C:\\Program Files\\HandBrake\\HandBrake.exe"
+  },
+  {
+    "nombre": "DaVinci Resolve",
+    "icono": "data/icons/DaVinci_Resolve.png",
+    "target": "C:\\Program Files\\Blackmagic Design\\DaVinci Resolve\\Resolve.exe"
+  }
+]

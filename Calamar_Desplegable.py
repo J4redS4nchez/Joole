@@ -25,6 +25,14 @@ import json
 
 
 
+import subprocess
+from pathlib import Path
+
+from PySide6.QtWidgets import QFileIconProvider
+from PySide6.QtCore import QFileInfo
+
+
+
 class CalamarDesplegable(QWidget):
     def __init__(self):
         super().__init__()
@@ -67,6 +75,12 @@ class CalamarDesplegable(QWidget):
 
         # ===== Area de iconos + grid (modular) =====
         self.apps_area, self.grid = crear_area_iconos(self.panel_frame)
+
+
+        # escuchar drops desde el área de iconos
+        if hasattr(self.apps_area, "files_dropped"):
+            self.apps_area.files_dropped.connect(self._handle_dropped_files)
+
 
         # ===== Apps persistentes (JSON) =====
         self.apps = self._load_apps()
@@ -370,3 +384,124 @@ class CalamarDesplegable(QWidget):
             placeholder_icon="assets/squid.png"
         )
 
+    def _resolve_lnk_target(self, lnk_path: str) -> str:
+        """
+        Devuelve TargetPath del .lnk usando PowerShell (Windows).
+        Si falla, regresa "".
+        """
+        try:
+            # Escapar comillas para powershell
+            p = lnk_path.replace("'", "''")
+            cmd = [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{p}'); $s.TargetPath"
+            ]
+            out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL).strip()
+            return out
+        except Exception:
+            return ""
+
+
+    #Obtener ICONO
+    def _icons_dir(self) -> str:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.path.join(base_dir, "data")
+        icons_dir = os.path.join(data_dir, "icons")
+        os.makedirs(icons_dir, exist_ok=True)
+        return icons_dir
+
+    def _save_icon_png(self, source_path: str, name_hint: str) -> str:
+        """
+        Extrae el ícono del archivo (exe/lnk) con QFileIconProvider y lo guarda como png.
+        Regresa la ruta relativa (para tu JSON) o "" si falla.
+        """
+        try:
+            provider = QFileIconProvider()
+            icon = provider.icon(QFileInfo(source_path))
+            pix = icon.pixmap(64, 64)
+            if pix.isNull():
+                return ""
+
+            # nombre seguro
+            safe = "".join(c for c in name_hint if c.isalnum() or c in ("_", "-", " ")).strip().replace(" ", "_")
+            if not safe:
+                safe = "app"
+
+            out_path = os.path.join(self._icons_dir(), f"{safe}.png")
+
+            # si ya existe, crea uno con sufijo
+            if os.path.exists(out_path):
+                i = 2
+                while True:
+                    cand = os.path.join(self._icons_dir(), f"{safe}_{i}.png")
+                    if not os.path.exists(cand):
+                        out_path = cand
+                        break
+                    i += 1
+
+            pix.save(out_path, "PNG")
+
+            # guardar ruta relativa para el JSON
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            rel = os.path.relpath(out_path, base_dir)
+            return rel.replace("\\", "/")
+        except Exception:
+            return ""
+
+
+    #NORMALIZAR LO SOLTADO Y AÑADIRLO
+
+    def _handle_dropped_files(self, paths: list) -> None:
+        """
+        Recibe rutas soltadas. Acepta .lnk y .exe.
+        - Resuelve .lnk a target real.
+        - Extrae icono y lo guarda en data/icons/
+        - Agrega a self.apps, guarda JSON y refresca el grid.
+        """
+        changed = False
+
+        for p in paths:
+            pth = Path(p)
+            if not pth.exists():
+                continue
+
+            ext = pth.suffix.lower()
+
+            target = ""
+            display_name = pth.stem
+
+            if ext == ".lnk":
+                target = self._resolve_lnk_target(str(pth))
+                if not target:
+                    continue
+            elif ext == ".exe":
+                target = str(pth)
+            else:
+                # ignorar otros archivos por ahora
+                continue
+
+            # Evitar duplicados por target
+            if any(t == target for (_, _, t) in self.apps):
+                continue
+
+            # Nombre: si es lnk, usa el nombre del lnk; si es exe, su stem
+            name = display_name
+
+            # Icono: mejor del target (exe real)
+            icon_rel = self._save_icon_png(target, name_hint=name)
+            if not icon_rel:
+                # fallback: intenta del archivo soltado
+                icon_rel = self._save_icon_png(str(pth), name_hint=name)
+
+            # si no se pudo icono, usa uno genérico
+            if not icon_rel:
+                icon_rel = "assets/squid.png"
+
+            self.apps.append((name, icon_rel, target))
+            changed = True
+
+        if changed:
+            self._save_apps(self.apps)
+            self._refresh_grid()

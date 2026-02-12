@@ -6,6 +6,8 @@ from config import PANEL_ANCHO, PANEL_ALTO, BOTON_ALTO
 from PySide6.QtCore import QTimer, QPoint
 from PySide6.QtWidgets import QLabel
 from PySide6.QtGui import QPainter, QPainterPath, QColor
+from PySide6.QtCore import Signal
+
 
 
 
@@ -117,6 +119,32 @@ class HoverTip(QLabel):
 
 
 
+class AppsDropArea(QWidget):
+    files_dropped = Signal(list)  # lista de rutas (str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        md = event.mimeData()
+        if md.hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        paths = []
+        for url in event.mimeData().urls():
+            if url.isLocalFile():
+                paths.append(url.toLocalFile())
+        if paths:
+            self.files_dropped.emit(paths)
+        event.acceptProposedAction()
+
+
+
+
 
 def crear_area_iconos(panel_frame: QWidget):
     """
@@ -124,7 +152,7 @@ def crear_area_iconos(panel_frame: QWidget):
     NO conecta lógica de abrir apps: eso se hace afuera.
     Devuelve: apps_area, grid
     """
-    apps_area = QWidget(panel_frame)
+    apps_area = AppsDropArea(panel_frame)
     GAP = 10  # px de separación para que el botón no tape iconos
     apps_area.setGeometry(0, 0, PANEL_ANCHO, PANEL_ALTO - BOTON_ALTO - GAP)
 
