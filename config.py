@@ -1,3 +1,11 @@
+import os, sys
+
+def resource_path(rel_path: str) -> str:
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel_path)
+
+
+
 # ===== Ajustes rápidos =====
 # Margen para separarlo del borde derecho (0 = pegado)
 MARGEN_DERECHA = 5

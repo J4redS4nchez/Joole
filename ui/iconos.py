@@ -7,7 +7,7 @@ from PySide6.QtCore import QTimer, QPoint
 from PySide6.QtWidgets import QLabel
 from PySide6.QtGui import QPainter, QPainterPath, QColor
 from PySide6.QtCore import Signal
-
+from config import resource_path
 
 
 
@@ -173,7 +173,7 @@ def crear_area_iconos(panel_frame: QWidget):
 
 
 def poblar_grid_iconos(apps_area: QWidget, grid: QGridLayout, apps: list, abrir_callback, cols: int = 3,
-                      rellenar_hasta_lleno: bool = True, placeholder_icon: str = "assets/squid.png"):
+                      rellenar_hasta_lleno: bool = True, placeholder_icon: str = None):
     """
     Crea y agrega botones al grid.
     apps = [(nombre, icono_path, target_path), ...]
@@ -184,8 +184,11 @@ def poblar_grid_iconos(apps_area: QWidget, grid: QGridLayout, apps: list, abrir_
     - Si faltan, rellena visualmente hasta llenar el espacio (placeholders deshabilitados)
     """
 
+    # ✅ placeholder seguro para modo .exe
+    if placeholder_icon is None:
+        placeholder_icon = resource_path("assets/squid.png")
+
     # ---- Capacidad máxima según el tamaño real del área (3/4 del panel) ----
-    # NOTA: estos valores deben coincidir con los que usas en tu botón
     BTN_W = 62
     BTN_H = 62
 
@@ -201,16 +204,12 @@ def poblar_grid_iconos(apps_area: QWidget, grid: QGridLayout, apps: list, abrir_
     usable_h = apps_area.height() - (top + bottom)
     usable_w = apps_area.width() - (left + right)
 
-    # Cuántas columnas CABEN (pero tú quieres fijo en 3; esto solo protege)
     max_cols_fit = max(1, (usable_w + h_spacing) // (BTN_W + h_spacing))
     cols = min(cols, int(max_cols_fit))
 
-    # Cuántas filas CABEN
     max_rows_fit = max(1, (usable_h + v_spacing) // (BTN_H + v_spacing))
-
     capacidad = int(max_rows_fit * cols)
 
-    # ---- Lista final: recorta si sobran, o rellena si faltan ----
     apps_final = list(apps[:capacidad])
 
     if rellenar_hasta_lleno and len(apps_final) < capacidad:
@@ -218,8 +217,7 @@ def poblar_grid_iconos(apps_area: QWidget, grid: QGridLayout, apps: list, abrir_
         for i in range(faltan):
             apps_final.append((f"Slot {len(apps_final)+1}", placeholder_icon, None))
 
-        # ---- Poblado del grid ----
-    row = 0
+    # ---- Poblado del grid ----
     for i, (nombre, icono, target) in enumerate(apps_final):
 
         is_placeholder = (target is None)
@@ -235,6 +233,10 @@ def poblar_grid_iconos(apps_area: QWidget, grid: QGridLayout, apps: list, abrir_
         )
 
         btn_app.setFocusPolicy(Qt.NoFocus)
+
+        if isinstance(icono, str) and icono.startswith("assets/"):
+            icono = resource_path(icono)
+
         btn_app.setIcon(QIcon(icono))
         btn_app.setIconSize(QSize(45, 45))
         btn_app.setFixedSize(BTN_W, BTN_H)
@@ -256,7 +258,6 @@ def poblar_grid_iconos(apps_area: QWidget, grid: QGridLayout, apps: list, abrir_
             }
         """)
 
-        # Si es placeholder, lo deshabilitamos (se verá gris)
         if is_placeholder:
             btn_app.setEnabled(False)
             btn_app.setCursor(Qt.ArrowCursor)

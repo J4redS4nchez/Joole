@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QFrame
 from PySide6.QtGui import QPixmap
 
-from config import PANEL_ANCHO, PANEL_ALTO
+from config import PANEL_ANCHO, PANEL_ALTO, resource_path
 from panel_pintura import PanelPintura
 
 
@@ -26,7 +26,7 @@ def crear_panel_flotante():
         }
     """)
 
-    pix_panel = QPixmap("assets/pintura_sombra.png").scaled(
+    pix_panel = QPixmap(resource_path("assets/pintura_sombra.png")).scaled(
         PANEL_ANCHO, PANEL_ALTO,
         Qt.KeepAspectRatio,
         Qt.SmoothTransformation

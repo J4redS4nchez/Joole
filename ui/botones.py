@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QToolButton, QWidget
 from PySide6.QtGui import QIcon, QPixmap
 
-from config import PANEL_ANCHO, PANEL_ALTO, BOTON_ALTO, AJUSTE_RECORTE_ARRIBA
+from config import PANEL_ANCHO, PANEL_ALTO, BOTON_ALTO, AJUSTE_RECORTE_ARRIBA, resource_path
 
 
 def crear_boton_superior(parent: QWidget):
@@ -15,7 +15,7 @@ def crear_boton_superior(parent: QWidget):
     btn.setCursor(Qt.PointingHandCursor)
     btn.setToolTip("Pintura")
 
-    pix_panel = QPixmap("assets/pintura_sombra.png").scaled(
+    pix_panel = QPixmap(resource_path("assets/pintura_sombra.png")).scaled(
         PANEL_ANCHO, PANEL_ALTO,
         Qt.KeepAspectRatio,
         Qt.SmoothTransformation

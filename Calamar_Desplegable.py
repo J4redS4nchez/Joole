@@ -10,7 +10,8 @@ from config import (
     BOTON_ALTO,
     DIAGONAL,
     VELOCIDAD,
-    DURACION_OPACIDAD
+    DURACION_OPACIDAD,
+    resource_path
 )
 
 from launcher import abrir_app
@@ -312,13 +313,22 @@ class CalamarDesplegable(QWidget):
         super().closeEvent(event)
 
 
+    def _appdata_base_dir(self) -> str:
+        appdata = os.getenv("APPDATA") or os.path.expanduser("~")
+        base_dir = os.path.join(appdata, "Widget")  # <- tu carpeta actual
+        os.makedirs(base_dir, exist_ok=True)
+        return base_dir
+
     #GUARDAR, CARGAR APPS
 
     def _apps_json_path(self) -> str:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.join(base_dir, "data")
+        data_dir = os.path.join(self._appdata_base_dir(), "data")
         os.makedirs(data_dir, exist_ok=True)
         return os.path.join(data_dir, "apps.json")
+
+
+
+
 
     def _load_apps(self) -> list:
         """
@@ -428,9 +438,9 @@ class CalamarDesplegable(QWidget):
             self.apps,
             abrir_callback=abrir_app,
             cols=3,
-            rellenar_hasta_lleno=False,
-            placeholder_icon="assets/squid.png"
+            rellenar_hasta_lleno=False
         )
+
 
     def _resolve_lnk_target(self, lnk_path: str) -> str:
         """
@@ -454,11 +464,10 @@ class CalamarDesplegable(QWidget):
 
     #Obtener ICONO
     def _icons_dir(self) -> str:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.join(base_dir, "data")
-        icons_dir = os.path.join(data_dir, "icons")
+        icons_dir = os.path.join(self._appdata_base_dir(), "data", "icons")
         os.makedirs(icons_dir, exist_ok=True)
         return icons_dir
+
 
     def _save_icon_png(self, source_path: str, name_hint: str) -> str:
         """
@@ -493,8 +502,7 @@ class CalamarDesplegable(QWidget):
 
             # guardar ruta relativa para el JSON
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            rel = os.path.relpath(out_path, base_dir)
-            return rel.replace("\\", "/")
+            return out_path.replace("\\", "/")
         except Exception:
             return ""
 
@@ -545,7 +553,7 @@ class CalamarDesplegable(QWidget):
 
             # si no se pudo icono, usa uno genérico
             if not icon_rel:
-                icon_rel = "assets/squid.png"
+                icon_rel = resource_path("assets/squid.png")
 
             self.apps.append((name, icon_rel, target))
             changed = True
