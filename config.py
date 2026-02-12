@@ -14,7 +14,7 @@ AJUSTE_RECORTE_ARRIBA = 18  # prueba 12, 18, 24
 
 #========= Tamaño diagonal y velocidad===============
 DIAGONAL = 0.3
-VELOCIDAD = 1250
+VELOCIDAD = 250 #1250
 
 #========= OPACIDAD ==================
-DURACION_OPACIDAD = 1200
+DURACION_OPACIDAD = 250 #1200
