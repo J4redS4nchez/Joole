@@ -20,3 +20,7 @@ Versiones/
 
 __pycache__/
 *.pyc
+
+
+#archivos
+installar/*.zip
