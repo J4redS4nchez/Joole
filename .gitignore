@@ -11,3 +11,6 @@ __pycache__/
 
 # Windows
 *.exe
+
+#Carpetas
+instalar/
