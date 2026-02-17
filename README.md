@@ -5,7 +5,7 @@
 
 <h2 align="left">Botón de despliegue</h2>
 <p align="center">
-  <img alt="Boton_despliegue" src="https://github.com/user-attachments/assets/e5ae0948-e571-4220-b3bf-189db0e0cd1" width="450">
+  <img width="454" height="172" alt="Boton_despliegue" src="https://github.com/user-attachments/assets/764e85ba-5a42-42b7-8ab4-010f6d64e680" />
 </p>
 
 <h2 align="left">Panel</h2>
