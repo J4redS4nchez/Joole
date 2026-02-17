@@ -23,7 +23,7 @@ from ui.iconos import crear_area_iconos, poblar_grid_iconos
 
 import os
 import json
-
+import subprocess
 
 
 import subprocess
@@ -442,6 +442,7 @@ class CalamarDesplegable(QWidget):
         )
 
 
+
     def _resolve_lnk_target(self, lnk_path: str) -> str:
         """
         Devuelve TargetPath del .lnk usando PowerShell (Windows).
@@ -449,17 +450,33 @@ class CalamarDesplegable(QWidget):
         """
         try:
             # Escapar comillas para powershell
-            p = lnk_path.replace("'", "''")
+            p = lnk_path.replace('"', '""')
+
             cmd = [
                 "powershell",
                 "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
                 "-Command",
                 f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{p}'); $s.TargetPath"
             ]
-            out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL).strip()
+
+            # ✅ Ocultar ventana de PowerShell
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+            out = subprocess.check_output(
+                cmd,
+                text=True,
+                stderr=subprocess.DEVNULL,
+                startupinfo=startupinfo,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            ).strip()
+
             return out
+
         except Exception:
             return ""
+
 
 
     #Obtener ICONO
